@@ -1,12 +1,11 @@
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import Blogs from "./Blogs";
 import DeleteButton from "./DeleteBlogs";
 import { makeStyles } from "@mui/styles";
 import config from "../config";
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(() => ({
   container: {
     display: "flex",
     flexDirection: "column",
@@ -53,46 +52,52 @@ const UserBlogs = () => {
   const [user, setUser] = useState();
   const id = localStorage.getItem("userId");
 
-  const sendRequest = async () => {
-    const res = await axios
-      .get(`${config.BASE_URL}/api/blogs/user/${id}`)
-      .catch((err) => console.log(err));
-    const data = await res?.data;
-    return data;
-  };
+  const sendRequest = useCallback(async () => {
+    try {
+      const res = await axios.get(`${config.BASE_URL}/api/blogs/user/${id}`);
+      return res.data;
+    } catch (err) {
+      console.error("Error fetching user blogs:", err);
+    }
+  }, [id]);
 
   useEffect(() => {
-    sendRequest().then((data) => setUser(data?.user));
-  }, []);
-
-  const handleDelete = (blogId) => {
-    axios.delete(`${config.BASE_URL}/api/blogs/${blogId}`).then(() => {
-      sendRequest().then((data) => setUser(data.user));
+    sendRequest().then((data) => {
+      if (data?.user) {
+        setUser(data.user);
+      }
     });
+  }, [sendRequest]);
+
+  const handleDelete = async (blogId) => {
+    try {
+      await axios.delete(`${config.BASE_URL}/api/blogs/${blogId}`);
+      sendRequest().then((data) => setUser(data?.user));
+    } catch (err) {
+      console.error("Error deleting blog:", err);
+    }
   };
 
   return (
-    <div cclassName="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg">
-      {user &&
-        user.blogs &&
-        user.blogs.map((blog, index) => (
-          <div key={index} className={classes.blogContainer}>
-            <Blogs
-              id={blog._id}
-              isUser={true}
-              title={blog.title}
-              description={blog.description}
-              imageURL={blog.image}
-              userName={user.name}
-            />
-            <img
-              className={classes.blogImage}
-              src={blog.image}
-              alt={blog.title}
-            />
-            <DeleteButton blogId={blog._id} onDelete={handleDelete} />
-          </div>
-        ))}
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg">
+      {user?.blogs?.map((blog, index) => (
+        <div key={index} className={classes.blogContainer}>
+          <Blogs
+            id={blog._id}
+            isUser={true}
+            title={blog.title}
+            description={blog.description}
+            imageURL={blog.image}
+            userName={user.name}
+          />
+          <img
+            className={classes.blogImage}
+            src={blog.image}
+            alt={blog.title}
+          />
+          <DeleteButton blogId={blog._id} onDelete={handleDelete} />
+        </div>
+      ))}
     </div>
   );
 };
