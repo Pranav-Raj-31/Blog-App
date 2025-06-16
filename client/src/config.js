@@ -1,4 +1,4 @@
 const config = {
-  BASE_URL: "https://blog-app-sncm.onrender.com",
+  BASE_URL: "https://blog-app-rhlg.onrender.com",
 };
 export default config;
